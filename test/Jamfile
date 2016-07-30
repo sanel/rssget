@@ -4,7 +4,7 @@ rule TestMain {
   ObjectCcFlags $(>) : $(GLOBAL_CFLAGS) ;
 
   Main $(<) : $(>) ;
-  LINKLIBS on $(<) = [ on $(<) return $(LINKLIBS) ] -L$(TOP)/build -lrssget ;
+  LINKLIBS on $(<) = [ on $(<) return $(LINKLIBS) ] $(RSSGET_LIB_FLAGS) ;
 
   LocalDepends all : $(<) ;
   LinkLibraries $(<) : $(RSSGET_LIB) ;

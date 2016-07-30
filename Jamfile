@@ -1,23 +1,29 @@
 SubDir TOP ;
 
-SOURCE_LIB = rd-tap.c ts/scheme.c ;
+## sources
+SOURCE_LIB = rd-tap.c ;
+TS_SOURCE  = ts/scheme.c ;
 SOURCE_BIN = rssget.c ;
 
-SEARCH_SOURCE = src ;
-SOURCE = $(SOURCE_LIB) $(SOURCE_BIN) ;
-
-GLOBAL_CFLAGS = -I$(TOP)/include -I$(TOP)/src/ts -Wall ;
-
-ObjectCcFlags $(SOURCE) : $(GLOBAL_CFLAGS) ;
-
+## binaries
 RSSGET_BIN = rssget ;
 RSSGET_LIB = librssget ;
 
-LOCATE_TARGET = build ;
-LINKFLAGS on $(TARGET) = -L$(TOP)/build -lrssget ;
+## globals
+SEARCH_SOURCE = src ;
+LOCATE_TARGET = $(SEARCH_SOURCE) ;
+SOURCE = $(SOURCE_LIB) $(SOURCE_BIN) $(TS_SOURCE) ;
 
+RSSGET_LIB_FLAGS = -L$(SEARCH_SOURCE) -lrssget ;
+
+GLOBAL_CFLAGS = -I$(TOP)/include -I$(TOP)/src/ts -Wall ;
+ObjectCcFlags $(SOURCE) : $(GLOBAL_CFLAGS) ;
+
+LINKFLAGS on $(TARGET) = $(RSSGET_LIB_FLAGS) ;
+
+## targets
 Main $(RSSGET_BIN) : $(SOURCE_BIN) ;
-Library $(RSSGET_LIB) : $(SOURCE_LIB) ;
+Library $(RSSGET_LIB) : $(SOURCE_LIB) $(TS_SOURCE) ;
 
 ## tests 
 actions quietly RunTests {
