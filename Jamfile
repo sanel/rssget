@@ -1,7 +1,7 @@
 SubDir TOP ;
 
 ## sources
-SOURCE_LIB = rd-tap.c ;
+SOURCE_LIB = rd-tap.c rd-scheme.c ;
 TS_SOURCE  = ts/scheme.c ;
 SOURCE_BIN = rssget.c ;
 
@@ -19,7 +19,7 @@ RSSGET_LIB_FLAGS = -L$(SEARCH_SOURCE) -lrssget ;
 GLOBAL_CFLAGS = -I$(TOP)/include -I$(TOP)/src/ts -Wall ;
 ObjectCcFlags $(SOURCE) : $(GLOBAL_CFLAGS) ;
 
-LINKFLAGS on $(TARGET) = $(RSSGET_LIB_FLAGS) ;
+LINKLIBS on $(RSSGET_BIN) = [ on $(<) return $(RSSGET_BIN) ] $(RSSGET_LIB_FLAGS) ;
 
 ## targets
 Main $(RSSGET_BIN) : $(SOURCE_BIN) ;

@@ -20,19 +20,3 @@ int _rd_is_str(const char *s1, const char *s2, const char *msg, const char *path
 #define rd_is_str(s1, s2, str)  _rd_is_str(s1, s2, str, __FILE__, __LINE__)
 
 #endif
-
-#if 0
-rd_plan(5);
-
-rd_ok(1 == 1, "check if 1 eq 1");
-rd_not_ok(1 == 2, "check 1 not 2");
-
-rd_skip(rd_ok(1 == 1, 0), 2);
-rd_ok(1 + 2, 0);
-rd_ok(1 + 2, 0);
-rd_ok(1 + 2, 0);
-rd_ok(1 + 2, 0);
-rd_skip_end();
-
-rd_done();
-#endif
