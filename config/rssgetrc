@@ -1,0 +1,51 @@
+;; -*- mode: scheme; -*-
+;; sample configuration file for rssget
+
+;; Maildir location. All feeds are delivered in a single mailbox.
+;; Location accepts absolute paths or path starting with '~/', e.g. '~/Maildir/feeds'."
+(define *rg-maildir-path* "~/Maildir/feeds")
+
+;; Temporary folder, where feeds will be stored for processing.
+(define *rg-tmpdir-path* "/tmp")
+
+;; Removes downloaded feeds after processing. Set this to false (#f) if you want to inspect
+;; downloaded content in case of processing errors.
+(define *rg-tmpdir-cleanup* #t)
+
+;; Fetchinge method. It supports wget, curl, builtin (using libcurl) or custom option.
+;; When you specify wget/curl/builtin, make sure to prepend it with quite (e.g. 'curl).
+;; 
+;; Custom option is a string with two placeholders, '%u' as url and '%l' as temporary location where
+;; feed will be downloaded before processed. This can look like:
+;; (define *rg-fetch-method* "/usr/bin/wget %u -o %l --user-agent=\"rssget %v\"")
+(define *rg-fetch-method* 'wget)
+
+;; HTML renderer. If set, it will convert CDATA HTML body to text or any other medium. It accepts
+;; options:
+;; - 'lynx - use lynx to dump html content to text)
+;; - 'none - no HTML processing will be done. Content will be stored as is.
+;; - "custom tool" - same as for *rg-fetch-method*, use custom tool for processing, using '%u' and '%l'
+;; placeholders. Example: (define *rg-html-renderer* "my-html-stripper %u > %l").
+(define *rg-html-renderer* 'lynx)
+
+;; Agent string. '%v' is rssget version number.
+(define *rg-agent-string* "rssget %v")
+
+;; Feed list. It is a list of lists and every sublist contains feed designator and url to
+;; actual feed content.
+(define *rg-feed-list*
+  '(("RedditLisp" "http://www.reddit.com/r/lisp/.rss")
+	("RedditProg" "http://www.reddit.com/r/programming/.rss")))
+
+;(add-hook 'after-mail-construct
+;		  (lambda (mail feed name url)
+;			(rg-mail-set-header! mail "X-RSSReader: rssget %v")
+;			(if (= "ReeditLisp" name)
+;			  (let ([title (rg-feed-get-title feed)])
+;			    (rg-mail-set-subject! mail (string "[LISP] " title))))))
+;
+;(add-hook 'on-delivery
+;		  (lambda (object name url)
+;			(when (= name "RedditProg")
+;			  (rg-mail-set-maildir! object "/home/foo/Maildir/feeds")
+;			  (rg-send-mail object "foo@foo.com"))))

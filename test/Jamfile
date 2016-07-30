@@ -1,0 +1,14 @@
+SubDir TOP test ;
+
+rule TestMain {
+  ObjectCcFlags $(>) : $(GLOBAL_CFLAGS) ;
+
+  Main $(<) : $(>) ;
+  LINKLIBS on $(<) = [ on $(<) return $(LINKLIBS) ] -L$(TOP)/build -lrssget ;
+
+  LocalDepends all : $(<) ;
+  LinkLibraries $(<) : $(RSSGET_LIB) ;
+}
+
+
+TestMain tap-test : tap-test.c ;
