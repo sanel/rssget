@@ -45,4 +45,8 @@
 		}																\
 	} while(0)
 
+/** Returns home folder. */
+const char *
+rd_home_dir(void);
+
 #endif

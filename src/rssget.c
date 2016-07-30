@@ -43,8 +43,6 @@ main(int argc, char **argv) {
 	}
 
 	interp = rd_scm_init(config, repl);
-	RD_RETURN_VAL_IF_FAIL(interp, 1);
-
 	rd_scm_fini(interp);
 	return 0;
 }

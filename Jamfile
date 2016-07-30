@@ -1,7 +1,7 @@
 SubDir TOP ;
 
 ## sources
-SOURCE_LIB = rd-tap.c rd-scheme.c ;
+SOURCE_LIB = rd-tap.c rd-scheme.c rd-utils.c ;
 TS_SOURCE  = ts/scheme.c ;
 SOURCE_BIN = rssget.c ;
 
@@ -23,6 +23,7 @@ LINKLIBS on $(RSSGET_BIN) = [ on $(<) return $(RSSGET_BIN) ] $(RSSGET_LIB_FLAGS)
 
 ## targets
 Main $(RSSGET_BIN) : $(SOURCE_BIN) ;
+LinkLibraries $(RSSGET_BIN) : $(RSSGET_LIB) ;
 Library $(RSSGET_LIB) : $(SOURCE_LIB) $(TS_SOURCE) ;
 
 ## tests 
