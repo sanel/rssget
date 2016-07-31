@@ -16,7 +16,7 @@ SOURCE = $(SOURCE_LIB) $(SOURCE_BIN) $(TS_SOURCE) ;
 
 RSSGET_LIB_FLAGS = -L$(SEARCH_SOURCE) -lrssget ;
 
-GLOBAL_CFLAGS = -I$(TOP)/include -I$(TOP)/src/ts -Wall ;
+GLOBAL_CFLAGS = -I$(TOP)/include -I$(TOP)/src/ts -Wall -DHAVE_MALLOC_USABLE_SIZE ;
 ObjectCcFlags $(SOURCE) : $(GLOBAL_CFLAGS) ;
 
 LINKLIBS on $(RSSGET_BIN) = [ on $(<) return $(RSSGET_BIN) ] $(RSSGET_LIB_FLAGS) ;

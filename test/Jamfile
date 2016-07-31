@@ -12,3 +12,4 @@ rule TestMain {
 
 
 TestMain tap-test : tap-test.c ;
+TestMain utils-test : utils-test.c ;

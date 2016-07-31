@@ -17,6 +17,7 @@ run_test() {
 
 for test in `ls *-test`; do
 	run_test $test
+	echo ""
 done
 
 exit $RSSGET_TESTS_STATUS

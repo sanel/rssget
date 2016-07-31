@@ -1,7 +1,7 @@
 #ifndef __RD_UTILS_H__
 #define __RD_UTILS_H__
 
-#define RD_DEBUG   printf
+#define RD_DEBUG(...)   rd_verbose_printf(RD_STRLOC ": ", __VA_ARGS__)
 #define RD_WARNING printf
 #define RD_ASSERT  assert
 
@@ -48,5 +48,17 @@
 /** Returns home folder. */
 const char *
 rd_home_dir(void);
+
+/** Global setting for verbosity. */
+void
+rd_set_verbose(int v);
+
+/** Return 1 if we should be verbose. */
+int
+rd_is_verbose(void);
+
+/** Used from RD_DEBUG macro. */
+int
+rd_verbose_printf(const char *pos, const char *fmt, ...);
 
 #endif

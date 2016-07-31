@@ -15,6 +15,7 @@ help() {
 	puts("   -h         show this help");
 	puts("   -c CONF    use CONF as configuration. Default is ~/.rssgetrc");
 	puts("   -r         run REPL. Useful for testing scheme code");
+	puts("   -v         be verbose");
 }
 
 int
@@ -25,7 +26,7 @@ main(int argc, char **argv) {
 
 	opterr = 0;
 
-	while ((c = getopt(argc, argv, "hrc:")) != -1) {
+	while ((c = getopt(argc, argv, "hrvc:")) != -1) {
 		switch (c) {
 			case 'h':
 				help();
@@ -35,6 +36,9 @@ main(int argc, char **argv) {
 				break;
 			case 'r':
 				repl = 1;
+				break;
+			case 'v':
+				rd_set_verbose(1);
 				break;
 			default:
 				printf("Unknown option '-%c'\n", optopt);
