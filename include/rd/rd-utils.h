@@ -1,6 +1,8 @@
 #ifndef __RD_UTILS_H__
 #define __RD_UTILS_H__
 
+#include <assert.h>
+
 #define RD_DEBUG(...)   rd_verbose_printf(RD_STRLOC ": ", __VA_ARGS__)
 #define RD_WARNING printf
 #define RD_ASSERT  assert
@@ -60,5 +62,9 @@ rd_is_verbose(void);
 /** Used from RD_DEBUG macro. */
 int
 rd_verbose_printf(const char *pos, const char *fmt, ...);
+
+/** Concat string using printf form. Returns allocated string that should be free()-ed. */
+char *
+rd_string_printf(const char *fmt, ...);
 
 #endif

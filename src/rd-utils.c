@@ -39,3 +39,33 @@ rd_verbose_printf(const char *pos, const char *fmt, ...) {
 	va_end(ap);
 	return ret;
 }
+
+char *
+rd_string_printf(const char *fmt, ...) {
+	char *p = NULL;
+	va_list ap;
+	int n = 0;
+	size_t size = 30;
+
+	p = malloc(size);
+	RD_RETURN_VAL_IF_FAIL(p, NULL);
+
+	while (1) {
+		va_start(ap, fmt);
+		n = vsnprintf(p, size, fmt, ap);
+		va_end(ap);
+
+		if (n > -1 && n < size)
+			return p;
+
+		if (n > -1)
+			size = n + 1;
+		else
+			size *= 2;
+
+		p = realloc(p, size);
+		RD_RETURN_VAL_IF_FAIL(p, NULL);
+	}
+
+	return p;
+}

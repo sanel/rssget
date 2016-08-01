@@ -1,0 +1,30 @@
+1..14
+ok 1 - empty list
+ok 2 - no first element
+ok 3 - no last element
+ok 4 - filled list
+ok 5 - compare elements in list
+ok 6 - compare elements in list
+ok 7 - compare elements in list
+ok 8 - compare elements in list
+ok 9 - compare elements in list
+ok 10 - compare elements in list
+ok 11 - compare elements in list
+ok 12 - compare elements in list
+ok 13 - compare elements in list
+ok 14 - compare elements in list
+ok 15 - empty list
+ok 16 - no first element
+ok 17 - no last element
+ok 18 - empty list
+ok 19 - no first element
+ok 20 - no last element
+ok 21 - first element in manual insert
+ok 22 - second element in manual insert
+ok 23 - third element in manual insert
+ok 24 - number of elements after manual insert
+ok 25 - erasing returns iterator to next element
+ok 26 - number of elements after erasing middle element
+ok 27 - first element in reverse order
+ok 28 - second element in reverse order
+ok 29 - third element in reverse order

@@ -4,7 +4,10 @@
 
 #include <rd/rd-scheme.h>
 #include <rd/rd-utils.h>
+#include <rd/rd-list.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static void
@@ -46,7 +49,20 @@ main(int argc, char **argv) {
 		}
 	}
 
-	interp = rd_scm_init(config, repl);
-	rd_scm_fini(interp);
+	rd_list_t *o = rd_list_init();
+	rd_list_push_front(o, strdup("1"));
+	rd_list_push_front(o, strdup("2"));
+	rd_list_push_front(o, strdup("3"));
+	rd_list_push_front(o, strdup("4"));
+
+	puts(" === printing ===");
+	for(rd_list_node_t *it = rd_list_first(o); it != rd_list_last(o); it = it->next)
+		printf( "%s\n", (char *)it->value);
+
+	//printf(" %i\n", rd_list_count(o));
+	rd_list_fini(o);
+
+	// interp = rd_scm_init(config, repl);
+	// rd_scm_fini(interp);
 	return 0;
 }

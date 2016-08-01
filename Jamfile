@@ -1,7 +1,7 @@
 SubDir TOP ;
 
 ## sources
-SOURCE_LIB = rd-tap.c rd-scheme.c rd-utils.c ;
+SOURCE_LIB = rd-tap.c rd-scheme.c rd-utils.c rd-list.c ;
 TS_SOURCE  = ts/scheme.c ;
 SOURCE_BIN = rssget.c ;
 
@@ -16,7 +16,7 @@ SOURCE = $(SOURCE_LIB) $(SOURCE_BIN) $(TS_SOURCE) ;
 
 RSSGET_LIB_FLAGS = -L$(SEARCH_SOURCE) -lrssget ;
 
-GLOBAL_CFLAGS = -I$(TOP)/include -I$(TOP)/src/ts -Wall -DHAVE_MALLOC_USABLE_SIZE ;
+GLOBAL_CFLAGS = -g -I$(TOP)/include -I$(TOP)/src/ts -Wall -DHAVE_MALLOC_USABLE_SIZE ;
 ObjectCcFlags $(SOURCE) : $(GLOBAL_CFLAGS) ;
 
 LINKLIBS on $(RSSGET_BIN) = [ on $(<) return $(RSSGET_BIN) ] $(RSSGET_LIB_FLAGS) ;
