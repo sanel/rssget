@@ -32,7 +32,7 @@ rd_verbose_printf(const char *pos, const char *fmt, ...) {
 	va_list ap;
 
 	if (!rd_is_verbose()) return ret;
-	if (pos) printf(pos);
+	if (pos) printf("%s", pos);
 
 	va_start(ap, fmt);
 	ret = vprintf(fmt, ap);
