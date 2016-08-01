@@ -49,6 +49,8 @@ main(int argc, char **argv) {
 		}
 	}
 
+	if (!config) config = getenv("RSSGET_CONFIG");
+
 	interp = rd_scm_init(config, repl);
 	rd_scm_fini(interp);
 	return 0;
