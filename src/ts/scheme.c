@@ -1,4 +1,4 @@
-/* T I N Y S C H E M E    1 . 4 0
+/* T I N Y S C H E M E    1 . 4 1
  *   Dimitrios Souflis (dsouflis@acm.org)
  *   Based on MiniScheme (original credits follow)
  * (MINISCM)               coded by Atsushi Moriwaki (11/5/1989)
@@ -11,7 +11,6 @@
  * (MINISCM)    current version is 0.85k4 (15 May 1994)
  *
  */
-
 
 #define _SCHEME_SOURCE
 #include "scheme-private.h"
@@ -56,16 +55,15 @@
 #define TOK_SHARP   10
 #define TOK_SHARP_CONST 11
 #define TOK_VEC     12
-#define TOK_USCORE  13
 
 #define BACKQUOTE '`'
-#define DELIMITERS  "()[]\";\f\t\v\n\r "
+#define DELIMITERS  "[]()\";\f\t\v\n\r "
 
 /*
  *  Basic memory allocation units
  */
 
-#define banner "TinyScheme 1.40"
+#define banner "TinyScheme 1.41"
 
 #include <string.h>
 #include <stdlib.h>
@@ -125,8 +123,7 @@ enum scheme_types {
   T_MACRO=12,
   T_PROMISE=13,
   T_ENVIRONMENT=14,
-  T_OPAQUE=15,
-  T_LAST_SYSTEM_TYPE=15
+  T_LAST_SYSTEM_TYPE=14
 };
 
 /* ADJ is enough slack to align cells in a TYPE_BITS-bit boundary */
@@ -253,12 +250,6 @@ INTERFACE INLINE int is_environment(pointer p) { return (type(p)==T_ENVIRONMENT)
 INTERFACE INLINE int is_immutable(pointer p) { return (typeflag(p)&T_IMMUTABLE); }
 /*#define setimmutable(p)  typeflag(p) |= T_IMMUTABLE*/
 INTERFACE INLINE void setimmutable(pointer p) { typeflag(p) |= T_IMMUTABLE; }
-
-/* opaque type */
-INTERFACE INLINE int is_opaque(pointer p)   { return (type(p)==T_OPAQUE); }
-INTERFACE void       *opaquevalue(pointer p)      { return (p)->_object._opaque._pvalue; }
-INTERFACE const char *opaquetag(pointer p) { return (p)->_object._opaque._tag; }
-INTERFACE static pointer mk_opaque(scheme *sc, const char *tag, void *ptr, void (*free_func)(void*));
 
 #define caar(p)          car(car(p))
 #define cadr(p)          car(cdr(p))
@@ -947,11 +938,11 @@ INTERFACE pointer mk_character(scheme *sc, int c) {
 }
 
 /* get number atom (integer) */
-INTERFACE pointer mk_integer(scheme *sc, long n) {
+INTERFACE pointer mk_integer(scheme *sc, long num) {
   pointer x = get_cell(sc,sc->NIL, sc->NIL);
 
   typeflag(x) = (T_NUMBER | T_ATOM);
-  ivalue_unchecked(x)= n;
+  ivalue_unchecked(x)= num;
   set_num_integer(x);
   return (x);
 }
@@ -1017,8 +1008,8 @@ INTERFACE static pointer mk_vector(scheme *sc, int len)
 
 INTERFACE static void fill_vector(pointer vec, pointer obj) {
      int i;
-     int n=ivalue(vec)/2+ivalue(vec)%2;
-     for(i=0; i<n; i++) {
+     int num=ivalue(vec)/2+ivalue(vec)%2;
+     for(i=0; i<num; i++) {
           typeflag(vec+1+i) = T_PAIR;
           setimmutable(vec+1+i);
           car(vec+1+i)=obj;
@@ -1147,9 +1138,8 @@ static pointer mk_atom(scheme *sc, char *q) {
 
 /* make constant */
 static pointer mk_sharp_const(scheme *sc, char *name) {
-     char tmp[STRBUFFSIZE];
-     long x = 0;
-	 unsigned long ux = 0;
+     long    x;
+     char    tmp[STRBUFFSIZE];
 
      if (!strcmp(name, "t"))
           return (sc->T);
@@ -1157,15 +1147,15 @@ static pointer mk_sharp_const(scheme *sc, char *name) {
           return (sc->F);
      else if (*name == 'o') {/* #o (octal) */
           snprintf(tmp, STRBUFFSIZE, "0%s", name+1);
-          sscanf(tmp, "%lo", &ux);
-          return (mk_integer(sc, ux));
+          sscanf(tmp, "%lo", (long unsigned *)&x);
+          return (mk_integer(sc, x));
      } else if (*name == 'd') {    /* #d (decimal) */
-          sscanf(name+1, "%ld", &x);
+          sscanf(name+1, "%ld", (long int *)&x);
           return (mk_integer(sc, x));
      } else if (*name == 'x') {    /* #x (hex) */
           snprintf(tmp, STRBUFFSIZE, "0x%s", name+1);
-          sscanf(tmp, "%lx", &ux);
-          return (mk_integer(sc, ux));
+          sscanf(tmp, "%lx", (long unsigned *)&x);
+          return (mk_integer(sc, x));
      } else if (*name == 'b') {    /* #b (binary) */
           x = binary_decode(name+1);
           return (mk_integer(sc, x));
@@ -1180,8 +1170,8 @@ static pointer mk_sharp_const(scheme *sc, char *name) {
           } else if(stricmp(name+1,"tab")==0) {
                c='\t';
      } else if(name[1]=='x' && name[2]!=0) {
-          unsigned int c1=0;
-          if(sscanf(name+2,"%x",&c1)==1 && c1 < UCHAR_MAX) {
+          int c1=0;
+          if(sscanf(name+2,"%x",(unsigned int *)&c1)==1 && c1 < UCHAR_MAX) {
                c=c1;
           } else {
                return sc->NIL;
@@ -1215,8 +1205,8 @@ static void mark(pointer a) {
 E2:  setmark(p);
      if(is_vector(p)) {
           int i;
-          int n=ivalue_unchecked(p)/2+ivalue_unchecked(p)%2;
-          for(i=0; i<n; i++) {
+          int num=ivalue_unchecked(p)/2+ivalue_unchecked(p)%2;
+          for(i=0; i<num; i++) {
                /* Vector cells will be treated like ordinary cells */
                mark(p+1+i);
           }
@@ -1333,13 +1323,7 @@ static void finalize_cell(scheme *sc, pointer a) {
        && a->_object._port->rep.stdio.closeit) {
       port_close(sc,a,port_input|port_output);
     }
-
-	if(sc->load_stack != a->_object._port)
-	  sc->free(a->_object._port);
-  } else if(is_opaque(a)) {
-    if(a->_object._opaque._free_func) {
-      a->_object._opaque._free_func(a->_object._opaque._pvalue);
-	}
+    sc->free(a->_object._port);
   }
 }
 
@@ -1364,7 +1348,6 @@ static int file_push(scheme *sc, const char *fname) {
     if(fname)
       sc->load_stack[sc->file_i].rep.stdio.filename = store_string(sc, strlen(fname), fname, 0);
 #endif
-
   }
   return fin!=0;
 }
@@ -1782,11 +1765,11 @@ static INLINE int skipspace(scheme *sc) {
 #endif
 
      if(c!=EOF) {
-       backchar(sc,c);
-       return 1;
-     } else { 
-       return EOF; 
+          backchar(sc,c);
+      return 1;
      }
+     else
+       { return EOF; }
 }
 
 /* get token */
@@ -1801,7 +1784,7 @@ static int token(scheme *sc) {
      case '[':
           return (TOK_LPAREN);
      case ')':
-	 case ']':
+     case ']':
           return (TOK_RPAREN);
      case '.':
           c=inchar(sc);
@@ -1863,9 +1846,6 @@ static int token(scheme *sc) {
                     return (TOK_SHARP);
                }
           }
-	case '_':
-		if ((c=inchar(sc)) == '"')
-			return (TOK_USCORE);
      default:
           backchar(sc,c);
           return (TOK_ATOM);
@@ -1945,21 +1925,41 @@ static void atom2str(scheme *sc, pointer l, int f, char **pp, int *plen) {
      } else if (l == sc->EOF_OBJ) {
           p = "#<EOF>";
      } else if (is_port(l)) {
-          p = sc->strbuff;
-          snprintf(p, STRBUFFSIZE, "#<PORT>");
+          p = "#<PORT>";
      } else if (is_number(l)) {
           p = sc->strbuff;
-          if(num_is_integer(l)) {
-               snprintf(p, STRBUFFSIZE, "%ld", ivalue_unchecked(l));
+          if (f <= 1 || f == 10) /* f is the base for numbers if > 1 */ {
+              if(num_is_integer(l)) {
+                   snprintf(p, STRBUFFSIZE, "%ld", ivalue_unchecked(l));
+              } else {
+                   snprintf(p, STRBUFFSIZE, "%.10g", rvalue_unchecked(l));
+                   /* r5rs says there must be a '.' (unless 'e'?) */
+                   f = strcspn(p, ".e");
+                   if (p[f] == 0) {
+                        p[f] = '.'; /* not found, so add '.0' at the end */
+                        p[f+1] = '0';
+                        p[f+2] = 0;
+                   }
+              }
           } else {
-               snprintf(p, STRBUFFSIZE, "%.10g", rvalue_unchecked(l));
-               /* r5rs says there must be a '.' (unless 'e'?) */
-               f = strcspn(p, ".e");
-               if (p[f] == 0) {
-                    p[f] = '.'; /* not found, so add '.0' at the end */
-                    p[f+1] = '0';
-                    p[f+2] = 0;
-               }
+              long v = ivalue(l);
+              if (f == 16) {
+                  if (v >= 0)
+                    snprintf(p, STRBUFFSIZE, "%lx", v);
+                  else
+                    snprintf(p, STRBUFFSIZE, "-%lx", -v);
+              } else if (f == 8) {
+                  if (v >= 0)
+                    snprintf(p, STRBUFFSIZE, "%lo", v);
+                  else
+                    snprintf(p, STRBUFFSIZE, "-%lo", -v);
+              } else if (f == 2) {
+                  unsigned long b = (v < 0) ? -v : v;
+                  p = &p[STRBUFFSIZE-1];
+                  *p = 0;
+                  do { *--p = (b&1) ? '1' : '0'; b >>= 1; } while (b != 0);
+                  if (v < 0) *--p = '-';
+              }
           }
      } else if (is_string(l)) {
           if (!f) {
@@ -1979,29 +1979,33 @@ static void atom2str(scheme *sc, pointer l, int f, char **pp, int *plen) {
           } else {
                switch(c) {
                case ' ':
-                    snprintf(p,STRBUFFSIZE,"#\\space"); break;
+                    p = "#\\space";
+                    break;
                case '\n':
-                    snprintf(p,STRBUFFSIZE,"#\\newline"); break;
+                    p = "#\\newline";
+                    break;
                case '\r':
-                    snprintf(p,STRBUFFSIZE,"#\\return"); break;
+                    p = "#\\return";
+                    break;
                case '\t':
-                    snprintf(p,STRBUFFSIZE,"#\\tab"); break;
+                    p = "#\\tab";
+                    break;
                default:
 #if USE_ASCII_NAMES
                     if(c==127) {
-                         snprintf(p,STRBUFFSIZE, "#\\del");
+                         p = "#\\del";
                          break;
                     } else if(c<32) {
-                         snprintf(p, STRBUFFSIZE, "#\\%s", charnames[c]);
+                         snprintf(p,STRBUFFSIZE, "#\\%s",charnames[c]);
                          break;
                     }
 #else
                     if(c<32) {
-                      snprintf(p,STRBUFFSIZE,"#\\x%x",c); break;
+                      snprintf(p,STRBUFFSIZE,"#\\x%x",c);
                       break;
                     }
 #endif
-                    snprintf(p,STRBUFFSIZE,"#\\%c",c); break;
+                    snprintf(p,STRBUFFSIZE,"#\\%c",c);
                     break;
                }
           }
@@ -2021,9 +2025,6 @@ static void atom2str(scheme *sc, pointer l, int f, char **pp, int *plen) {
           snprintf(p,STRBUFFSIZE,"#<FOREIGN PROCEDURE %ld>", procnum(l));
      } else if (is_continuation(l)) {
           p = "#<CONTINUATION>";
-	 } else if (is_opaque(l)) {
-		  p = sc->strbuff;
-		  snprintf(p,STRBUFFSIZE,"#<%s>", opaquetag(l) ? opaquetag(l) : "OPAQUE");
      } else {
           p = "#<ERROR>";
      }
@@ -2049,16 +2050,6 @@ static pointer mk_continuation(scheme *sc, pointer d) {
      typeflag(x) = T_CONTINUATION;
      cont_dump(x) = d;
      return (x);
-}
-
-INTERFACE static pointer mk_opaque(scheme *sc, const char *tag, void *ptr, void (*free_func)(void*)) {
-	pointer x = get_cell(sc, sc->NIL, sc->NIL);
-	typeflag(x) = (T_OPAQUE | T_ATOM);
-
-	(x)->_object._opaque._pvalue = ptr;
-	(x)->_object._opaque._tag = tag;
-	(x)->_object._opaque._free_func = free_func;
-	return (x);
 }
 
 static pointer list_star(scheme *sc, pointer d) {
@@ -2313,8 +2304,8 @@ static pointer _Error_1(scheme *sc, const char *s, pointer a) {
      char sbuf[STRBUFFSIZE];
 
      /* make sure error is not in REPL */
-     if(sc->load_stack[sc->file_i].kind & port_file &&
-        sc->load_stack[sc->file_i].rep.stdio.file != stdin) {
+     if (sc->load_stack[sc->file_i].kind & port_file &&
+         sc->load_stack[sc->file_i].rep.stdio.file != stdin) {
        int ln = sc->load_stack[sc->file_i].rep.stdio.curr_line;
        const char *fname = sc->load_stack[sc->file_i].rep.stdio.filename;
 
@@ -2330,7 +2321,7 @@ static pointer _Error_1(scheme *sc, const char *s, pointer a) {
 #endif
 
 #if USE_ERROR_HOOK
-    x = find_slot_in_env(sc,sc->envir,hdl,1);
+     x=find_slot_in_env(sc,sc->envir,hdl,1);
     if (x != sc->NIL) {
          if(a!=0) {
                sc->code = cons(sc, cons(sc, sc->QUOTE, cons(sc,(a), sc->NIL)), sc->NIL);
@@ -2812,7 +2803,7 @@ static pointer opexe_0(scheme *sc, enum scheme_opcodes op) {
                sc->code = car(sc->code);
           else
                sc->code = cadr(sc->code);  /* (if #f 1) ==> () because
-                               * car(sc->NIL) = sc->NIL */
+                                            * car(sc->NIL) = sc->NIL */
           s_goto(sc,OP_EVAL);
 
      case OP_LET0:       /* let */
@@ -2950,7 +2941,7 @@ static pointer opexe_1(scheme *sc, enum scheme_opcodes op) {
                if ((sc->code = cdar(sc->code)) == sc->NIL) {
                     s_return(sc,sc->value);
                }
-               if(car(sc->code)==sc->FEED_TO) {
+               if(!sc->code || car(sc->code)==sc->FEED_TO) {
                     if(!is_pair(cdr(sc->code))) {
                          Error_0(sc,"syntax error in cond");
                     }
@@ -3178,7 +3169,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
           x=car(sc->args);
           if (num_is_integer(x) && num_is_integer(y))
              real_result=0;
-          /* This 'if' is an R5RS compatability fix. */
+          /* This 'if' is an R5RS compatibility fix. */
           /* NOTE: Remove this 'if' fix for R6RS.    */
           if (rvalue(x) == 0 && rvalue(y) < 0) {
              result = 0.0;
@@ -3361,28 +3352,70 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
           s_return(sc,mk_symbol(sc,strvalue(car(sc->args))));
 
      case OP_STR2ATOM: /* string->atom */ {
-       char *s=strvalue(car(sc->args));
-       if(*s=='#') {
-         s_return(sc, mk_sharp_const(sc, s+1));
-       } else {
-         s_return(sc, mk_atom(sc, s));
-       }
-     }
+          char *s=strvalue(car(sc->args));
+          long pf = 0;
+          if(cdr(sc->args)!=sc->NIL) {
+            /* we know cadr(sc->args) is a natural number */
+            /* see if it is 2, 8, 10, or 16, or error */
+            pf = ivalue_unchecked(cadr(sc->args));
+            if(pf == 16 || pf == 10 || pf == 8 || pf == 2) {
+               /* base is OK */
+            }
+            else {
+              pf = -1;
+            }
+          }
+          if (pf < 0) {
+            Error_1(sc, "string->atom: bad base:", cadr(sc->args));
+          } else if(*s=='#') /* no use of base! */ {
+            s_return(sc, mk_sharp_const(sc, s+1));
+          } else {
+            if (pf == 0 || pf == 10) {
+              s_return(sc, mk_atom(sc, s));
+            }
+            else {
+              char *ep;
+              long iv = strtol(s,&ep,(int )pf);
+              if (*ep == 0) {
+                s_return(sc, mk_integer(sc, iv));
+              }
+              else {
+                s_return(sc, sc->F);
+              }
+            }
+          }
+        }
 
      case OP_SYM2STR: /* symbol->string */
           x=mk_string(sc,symname(car(sc->args)));
           setimmutable(x);
           s_return(sc,x);
-     case OP_ATOM2STR: /* atom->string */
-       x=car(sc->args);
-       if(is_number(x) || is_character(x) || is_string(x) || is_symbol(x)) {
-         char *p;
-         int len;
-         atom2str(sc,x,0,&p,&len);
-         s_return(sc,mk_counted_string(sc,p,len));
-       } else {
-         Error_1(sc, "atom->string: not an atom:", x);
-       }
+
+     case OP_ATOM2STR: /* atom->string */ {
+          long pf = 0;
+          x=car(sc->args);
+          if(cdr(sc->args)!=sc->NIL) {
+            /* we know cadr(sc->args) is a natural number */
+            /* see if it is 2, 8, 10, or 16, or error */
+            pf = ivalue_unchecked(cadr(sc->args));
+            if(is_number(x) && (pf == 16 || pf == 10 || pf == 8 || pf == 2)) {
+              /* base is OK */
+            }
+            else {
+              pf = -1;
+            }
+          }
+          if (pf < 0) {
+            Error_1(sc, "atom->string: bad base:", cadr(sc->args));
+          } else if(is_number(x) || is_character(x) || is_string(x) || is_symbol(x)) {
+            char *p;
+            int len;
+            atom2str(sc,x,(int )pf,&p,&len);
+            s_return(sc,mk_counted_string(sc,p,len));
+          } else {
+            Error_1(sc, "atom->string: not an atom:", x);
+          }
+        }
 
      case OP_MKSTRING: { /* make-string */
           int fill=' ';
@@ -3947,9 +3980,7 @@ static pointer opexe_4(scheme *sc, enum scheme_opcodes op) {
 
      case OP_CURR_ENV: /* current-environment */
           s_return(sc,sc->envir);
-
      default: break;
-
      }
      return sc->T;
 }
@@ -4082,13 +4113,6 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
                }
                setimmutable(x);
                s_return(sc,x);
-          case TOK_USCORE:
-				x=readstrexp(sc);
-				if(x==sc->F) {
-					Error_0(sc,"Error reading string");
-				}
-				setimmutable(x);
-				s_return(sc,x);
           case TOK_SHARP: {
                pointer f=find_slot_in_env(sc,sc->envir,sc->SHARP_HOOK,1);
                if(f==sc->NIL) {
@@ -4105,7 +4129,6 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
                     s_return(sc,x);
                }
           default:
-			   sc->retcode = -1;
                Error_0(sc,"syntax error: illegal token");
           }
           break;
@@ -4590,12 +4613,7 @@ static struct scheme_interface vtbl ={
   setimmutable,
 
   scheme_load_file,
-  scheme_load_string,
-
-  is_opaque,
-  mk_opaque,
-  opaquevalue,
-  opaquetag
+  scheme_load_string
 };
 #endif
 
@@ -4624,7 +4642,7 @@ int scheme_init(scheme *sc) {
  return scheme_init_custom_alloc(sc,malloc,free);
 }
 
-int scheme_init_custom_alloc(scheme *sc, func_alloc _malloc, func_dealloc _free) {
+int scheme_init_custom_alloc(scheme *sc, func_alloc malloc, func_dealloc free) {
   int i, n=sizeof(dispatch_table)/sizeof(dispatch_table[0]);
   pointer x;
 
@@ -4637,8 +4655,8 @@ int scheme_init_custom_alloc(scheme *sc, func_alloc _malloc, func_dealloc _free)
   sc->vptr=&vtbl;
 #endif
   sc->gensym_cnt=0;
-  sc->malloc=_malloc;
-  sc->free=_free;
+  sc->malloc=malloc;
+  sc->free=free;
   sc->last_cell_seg = -1;
   sc->sink = &sc->_sink;
   sc->NIL = &sc->_NIL;
@@ -4781,7 +4799,7 @@ void scheme_deinit(scheme *sc) {
 
 #if SHOW_ERROR_LINE
   for(i=0; i<=sc->file_i; i++) {
-    if (sc->load_stack[sc->file_i].kind & port_file) {
+    if (sc->load_stack[i].kind & port_file) {
       fname = sc->load_stack[i].rep.stdio.filename;
       if(fname)
         sc->free(fname);
@@ -4807,9 +4825,10 @@ void scheme_load_named_file(scheme *sc, FILE *fin, const char *filename) {
 
 #if SHOW_ERROR_LINE
   sc->load_stack[0].rep.stdio.curr_line = 0;
-  sc->load_stack[0].rep.stdio.filename = 0;
   if(fin!=stdin && filename)
     sc->load_stack[0].rep.stdio.filename = store_string(sc, strlen(filename), filename, 0);
+  else
+    sc->load_stack[0].rep.stdio.filename = NULL;
 #endif
 
   sc->inport=sc->loadport;
@@ -4872,8 +4891,8 @@ void scheme_register_foreign_func_list(scheme * sc,
     }
 }
 
-pointer scheme_apply0(scheme *sc, const char *proc)
-{ return scheme_eval(sc, cons(sc,mk_symbol(sc,proc),sc->NIL)); }
+pointer scheme_apply0(scheme *sc, const char *procname)
+{ return scheme_eval(sc, cons(sc,mk_symbol(sc,procname),sc->NIL)); }
 
 void save_from_C_call(scheme *sc)
 {
@@ -4928,111 +4947,12 @@ pointer scheme_eval(scheme *sc, pointer obj)
   return sc->value;
 }
 
-pointer scheme_reverse_in_place(scheme *sc, pointer term, pointer list) {
-	 return reverse_in_place(sc, term, list);
-}
 
 #endif
 
 /* ========== Main ========== */
 
 #if STANDALONE
-
-typedef struct TestOpaque_t {
-	char *str;
-	int   num;
-} TestOpaque;
-
-static void free_test_opaque(void *d) {
-	puts("calling freeee...");
-	TestOpaque *tt = (TestOpaque*)d;
-	free(tt->str);
-	free(tt);
-}
-
-static pointer new_test_opaque(scheme *sc, pointer args) {
-	pointer x, arg1, arg2;
-	TestOpaque *tt;
-
-	if(list_length(sc, args) != 2)
-		return sc->F;
-
-	arg1 = pair_car(args);
-	if(!sc->vptr->is_string(arg1)) return sc->F;
-
-	args = pair_cdr(args);
-	arg2 = pair_car(args);
-	if(!sc->vptr->is_integer(arg2)) return sc->F;
-
-	tt = malloc(sizeof(TestOpaque));
-
-	tt->str = strdup(sc->vptr->string_value(arg1));
-	tt->num = sc->vptr->ivalue(arg2);
-
-	return sc->vptr->mk_opaque(sc, "TEST-OPAQUE", tt, free_test_opaque);
-}
-
-static pointer get_str_test_opaque(scheme *sc, pointer args) {
-	pointer arg;
-	TestOpaque *to;
-
-	if(list_length(sc, args) != 1) return sc->F;
-	arg = pair_car(args);
-
-	if(!sc->vptr->is_opaque(arg))
-		return sc->F;
-
-	to = sc->vptr->opaquevalue(arg);
-	return sc->vptr->mk_string(sc, to->str);
-}
-
-static pointer get_tag_test_opaque(scheme *sc, pointer args) {
-	pointer arg;
-
-	if(list_length(sc, args) != 1) return sc->F;
-	arg = pair_car(args);
-
-	if(!sc->vptr->is_opaque(arg)) return sc->F;
-	return sc->vptr->mk_string(sc, sc->vptr->opaquetag(arg));
-}
-
-static pointer get_num_test_opaque(scheme *sc, pointer args) {
-	pointer arg;
-	TestOpaque *to;
-
-	if(list_length(sc, args) != 1) return sc->F;
-	arg = pair_car(args);
-
-	if(!sc->vptr->is_opaque(arg)) return sc->F;
-	to = sc->vptr->opaquevalue(arg);
-	return sc->vptr->mk_integer(sc, to->num);
-}
-
-static void register_test_opaque(scheme *sc) {
-	sc->vptr->scheme_define(
-		sc,
-		sc->global_env,
-		sc->vptr->mk_symbol(sc, "make-testo"),
-		sc->vptr->mk_foreign_func(sc, new_test_opaque));
-
-	sc->vptr->scheme_define(
-		sc,
-		sc->global_env,
-		sc->vptr->mk_symbol(sc, "testo-get-tag"),
-		sc->vptr->mk_foreign_func(sc, get_tag_test_opaque));
-
-	sc->vptr->scheme_define(
-		sc,
-		sc->global_env,
-		sc->vptr->mk_symbol(sc, "testo-get-str"),
-		sc->vptr->mk_foreign_func(sc, get_str_test_opaque));
-
-	sc->vptr->scheme_define(
-		sc,
-		sc->global_env,
-		sc->vptr->mk_symbol(sc, "testo-get-num"),
-		sc->vptr->mk_foreign_func(sc, get_num_test_opaque));
-}
 
 #if defined(__APPLE__) && !defined (OSX)
 int main()
@@ -5048,7 +4968,7 @@ int MacTS_main(int argc, char **argv) {
 int main(int argc, char **argv) {
 #endif
   scheme sc;
-  FILE *fin;
+  FILE *fin = 0;
   char *file_name=InitFile;
   int retcode;
   int isfile=1;
@@ -5124,7 +5044,6 @@ int main(int argc, char **argv) {
     file_name=*argv++;
   } while(file_name!=0);
   if(argc==1) {
-	  register_test_opaque(&sc);
     scheme_load_named_file(&sc,stdin,0);
   }
   retcode=sc.retcode;

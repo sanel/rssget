@@ -55,11 +55,6 @@ struct cell {
       struct cell *_car;
       struct cell *_cdr;
     } _cons;
-		struct {
-			const char *_tag;
-			void       *_pvalue;
-			void      (*_free_func)(void*);
-		}_opaque;
   } _object;
 };
 
@@ -73,8 +68,12 @@ int retcode;
 int tracing;
 
 
+#ifndef CELL_SEGSIZE
 #define CELL_SEGSIZE    5000  /* # of cells in one segment */
+#endif
+#ifndef CELL_NSEGMENT
 #define CELL_NSEGMENT   10    /* # of segments for cells */
+#endif
 char *alloc_seg[CELL_NSEGMENT];
 pointer cell_seg[CELL_NSEGMENT];
 int     last_cell_seg;
@@ -122,7 +121,9 @@ pointer outport;
 pointer save_inport;
 pointer loadport;
 
+#ifndef MAXFIL
 #define MAXFIL 64
+#endif
 port load_stack[MAXFIL];     /* Stack of open files for port -1 (LOADing) */
 int nesting_stack[MAXFIL];
 int file_i;
@@ -131,9 +132,13 @@ int nesting;
 char    gc_verbose;      /* if gc_verbose is not zero, print gc status */
 char    no_memory;       /* Whether mem. alloc. has failed */
 
+#ifndef LINESIZE
 #define LINESIZE 1024
+#endif
 char    linebuff[LINESIZE];
+#ifndef STRBUFFSIZE
 #define STRBUFFSIZE 256
+#endif
 char    strbuff[STRBUFFSIZE];
 
 FILE *tmpfp;
@@ -146,8 +151,8 @@ void *ext_data;     /* For the benefit of foreign functions */
 long gensym_cnt;
 
 struct scheme_interface *vptr;
-void *dump_base;	 /* pointer to base of allocated dump stack */
-int dump_size;		 /* number of frames allocated for dump stack */
+void *dump_base;    /* pointer to base of allocated dump stack */
+int dump_size;      /* number of frames allocated for dump stack */
 };
 
 /* operator code */

@@ -12,18 +12,7 @@ extern "C" {
 /*
  * Default values for #define'd symbols
  */
-
-#define USE_INTERFACE 1
-#define USE_MATH 0
-
-/*
-#ifndef INLINE	 
-#define INLINE inline
-#endif
-*/
-
-/* If used as standalone interpreter */
-#ifndef STANDALONE
+#ifndef STANDALONE       /* If used as standalone interpreter */
 # define STANDALONE 0
 #endif
 
@@ -138,7 +127,7 @@ typedef struct num {
      } value;
 } num;
 
-SCHEME_EXPORT scheme *scheme_init_new();
+SCHEME_EXPORT scheme *scheme_init_new(void);
 SCHEME_EXPORT scheme *scheme_init_new_custom_alloc(func_alloc malloc, func_dealloc free);
 SCHEME_EXPORT int scheme_init(scheme *sc);
 SCHEME_EXPORT int scheme_init_custom_alloc(scheme *sc, func_alloc, func_dealloc);
@@ -155,7 +144,6 @@ SCHEME_EXPORT pointer scheme_call(scheme *sc, pointer func, pointer args);
 SCHEME_EXPORT pointer scheme_eval(scheme *sc, pointer obj);
 void scheme_set_external_data(scheme *sc, void *p);
 SCHEME_EXPORT void scheme_define(scheme *sc, pointer env, pointer symbol, pointer value);
-SCHEME_EXPORT pointer scheme_reverse_in_place(scheme *sc, pointer term, pointer list);
 
 typedef pointer (*foreign_func)(scheme *, pointer);
 
@@ -172,6 +160,7 @@ pointer mk_foreign_func(scheme *sc, foreign_func f);
 void putstr(scheme *sc, const char *s);
 int list_length(scheme *sc, pointer a);
 int eqv(pointer a, pointer b);
+
 
 #if USE_INTERFACE
 struct scheme_interface {
@@ -235,12 +224,6 @@ struct scheme_interface {
   void (*setimmutable)(pointer p);
   void (*load_file)(scheme *sc, FILE *fin);
   void (*load_string)(scheme *sc, const char *input);
-
-  /* opaque type */
-  int     (*is_opaque)(pointer p);
-  pointer (*mk_opaque)(scheme *sc, const char *tag, void *ptr, void (*free_func)(void*));
-  void    *(*opaquevalue)(pointer p);
-  const char *(*opaquetag)(pointer p);
 };
 #endif
 
@@ -248,7 +231,7 @@ struct scheme_interface {
 typedef struct scheme_registerable
 {
   foreign_func  f;
-  char *        name;
+  const char *  name;
 }
 scheme_registerable;
 
