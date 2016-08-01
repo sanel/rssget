@@ -2,6 +2,7 @@
 #define __RD_LIST_H__
 
 #include <stdlib.h>
+#include <rd/rd-utils.h>
 
 typedef struct _rd_list_node_t {
 	void *value;
@@ -29,30 +30,30 @@ rd_list_insert(rd_list_t *lst, rd_list_node_t *it, void *value);
 rd_list_node_t *
 rd_list_erase(rd_list_t *lst, rd_list_node_t *it);
 
-inline rd_list_node_t *
+RD_INLINE rd_list_node_t *
 rd_list_first(rd_list_t *o) { return o->tail ? o->tail->next : NULL; }
 
 /*
  * NOTE: it will return last element in list, which is tail. It is not last
  * actual element - you should obtain it with rd_list_last(o)->prev;
  */
-inline rd_list_node_t *
+RD_INLINE rd_list_node_t *
 rd_list_last(rd_list_t *o) { return o->tail ? o->tail : NULL; }
 
-inline rd_list_node_t *
+RD_INLINE rd_list_node_t *
 rd_list_rfirst(rd_list_t *o) { return o->tail ? o->tail->prev: NULL; }
 
-inline rd_list_node_t *
+RD_INLINE rd_list_node_t *
 rd_list_push_back(rd_list_t *o, void *value) {
 	return rd_list_insert(o, rd_list_last(o), value);
 }
 
-inline rd_list_node_t *
+RD_INLINE rd_list_node_t *
 rd_list_push_front(rd_list_t *o, void *value) {
 	return rd_list_insert(o, rd_list_first(o), value);
 }
 
-inline unsigned int
+RD_INLINE unsigned int
 rd_list_count(rd_list_t *o) { return o->count; }
 
 /* forward/backward iterator emulation */

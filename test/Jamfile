@@ -6,7 +6,7 @@ rule TestMain {
   Main $(<) : $(>) ;
   LINKLIBS on $(<) = [ on $(<) return $(LINKLIBS) ] $(RSSGET_LIB_FLAGS) ;
 
-  LocalDepends all : $(<) ;
+  Depends all : $(<) ;
   LinkLibraries $(<) : $(RSSGET_LIB) ;
 }
 
