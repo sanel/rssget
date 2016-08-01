@@ -3,8 +3,6 @@
 
 #include <assert.h>
 
-#define RD_INLINE __inline__
-
 #define RD_DEBUG(...)   rd_verbose_printf(RD_STRLOC ": ", __VA_ARGS__)
 #define RD_WARNING printf
 #define RD_ASSERT  assert
